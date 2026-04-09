@@ -61,3 +61,38 @@
     -webkit-text-fill-color: transparent;
   }
 }
+
+/* =======================================================================
+   Hybrid Mobile / Native Shell Constraints 
+   WARNING: Locked strictly to coarse pointer (touch) environments to 
+   protect the Desktop Browser UX!
+   ======================================================================= */
+@media (hover: none) and (pointer: coarse) {
+  body, html {
+    /* Prevent classic browser text highlighting when users tap/hold Native-like elements */
+    -webkit-user-select: none;
+    user-select: none;
+    
+    /* Disable the generic iOS/Android context menu upon long press */
+    -webkit-touch-callout: none;
+    
+    /* Remove the default blue bounding box flash when tapping interactive elements */
+    -webkit-tap-highlight-color: transparent;
+    
+    /* Lock the overscroll behavior to prevent the classic web "rubber-band" bouncing on refresh points */
+    overscroll-behavior-y: none;
+  }
+
+  /* Exception: Keep inputs and textareas natively selectable */
+  input, textarea {
+    -webkit-user-select: auto;
+    user-select: auto;
+  }
+
+  /* Violently strip the scrollbar from the UI completely for a sleek native feel */
+  ::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    background: transparent;
+  }
+}

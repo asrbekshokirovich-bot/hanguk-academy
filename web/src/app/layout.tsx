@@ -1,13 +1,22 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: "#0f172a", // Matches var(--color-surface-900)
+};
+
 export const metadata: Metadata = {
   title: "Hanguk Academy - Premium AI Korean Learning",
   description: "Master Korean with 3x/week live group classes, AI voice partners, and automated study notes.",
 };
+
 
 export default function RootLayout({
   children,
