@@ -47,13 +47,19 @@ jobs:
           
           # 5. Extract the generated executable
           cp build/app/outputs/flutter-apk/app-release.apk ../hanguk_academy.apk
+          cd ..
+          
+          # 6. Generate cryptographic SHA-256 signatures for OTA Verify
+          sha256sum hanguk_academy.apk | awk '{print $1}' > hanguk_academy.apk.sha256
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: "v1.0.${{ github.run_number }}"
           name: "Hanguk Academy Build v1.0.${{ github.run_number }}"
-          files: hanguk_academy.apk
+          files: |
+            hanguk_academy.apk
+            hanguk_academy.apk.sha256
           make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

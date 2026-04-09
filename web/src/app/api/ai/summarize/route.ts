@@ -1,8 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
+import { createClient } from '@/lib/supabase/server';
 
 export async function POST(req: NextRequest) {
   try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized access. Must be logged in.' }, { status: 401 });
+    }
+
     const { transcript } = await req.json();
     
     if (!transcript) {

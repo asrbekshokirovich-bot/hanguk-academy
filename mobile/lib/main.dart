@@ -63,8 +63,9 @@ class _DRMWebContainerState extends State<DRMWebContainer> {
       
       final remoteVersion = response.data['latest_version'] as String?;
       final downloadUrl = response.data['download_url'] as String?;
+      final remoteHash = response.data['sha256_checksum'] as String?;
 
-      if (remoteVersion != null && remoteVersion != currentVersion && downloadUrl != null) {
+      if (remoteVersion != null && remoteVersion != currentVersion && downloadUrl != null && remoteHash != null) {
         if (mounted) {
           showDialog(
             context: context,
@@ -73,6 +74,7 @@ class _DRMWebContainerState extends State<DRMWebContainer> {
               return OTAUpdaterDialog(
                 downloadUrl: downloadUrl,
                 latestVersion: remoteVersion,
+                expectedSha256: remoteHash,
               );
             },
           );

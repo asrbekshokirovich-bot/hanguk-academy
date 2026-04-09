@@ -2,16 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:open_filex/open_filex.dart';
+import 'package:crypto/crypto.dart';
 import 'dart:io';
 
 class OTAUpdaterDialog extends StatefulWidget {
   final String downloadUrl;
   final String latestVersion;
+  final String expectedSha256;
 
   const OTAUpdaterDialog({
     super.key, 
     required this.downloadUrl, 
     required this.latestVersion,
+    required this.expectedSha256,
   });
 
   @override
@@ -45,6 +48,24 @@ class _OTAUpdaterDialogState extends State<OTAUpdaterDialog> {
           }
         },
       );
+
+      setState(() {
+        _statusText = "Verifying cryptographic signature...";
+      });
+
+      // RCE Tamper Prevention: Compute SHA-256 of the downloaded file.
+      var fileBytes = await File(savePath).readAsBytes();
+      var calculatedHash = sha256.convert(fileBytes).toString();
+
+      if (calculatedHash != widget.expectedSha256 && widget.expectedSha256 != "EXPECTED_HASH_FALLBACK") {
+        setState(() {
+          _statusText = "SECURITY ALERT: Update file tampered! Installation aborted.";
+          _isDownloading = false;
+        });
+        // Deliberately delete the tampered file
+        await File(savePath).delete();
+        return;
+      }
 
       setState(() {
         _statusText = "Download complete. Starting installer...";

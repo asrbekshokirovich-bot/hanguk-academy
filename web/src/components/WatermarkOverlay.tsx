@@ -17,10 +17,28 @@ export default function WatermarkOverlay() {
       }
     }
     loadIdentity();
+    // Anti-Tamper: MutationObserver ensures the DOM nodes cannot be deleted via DevTools without triggering a harsh reset.
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.removedNodes.length > 0) {
+          console.warn("Watermark tampering detected. Reloading secure context.");
+          window.location.reload();
+        }
+      });
+    });
+
+    const watermarkContainer = document.getElementById('watermark-container');
+    if (watermarkContainer) {
+      observer.observe(watermarkContainer, { childList: true, subtree: true });
+    }
+
+    return () => {
+      observer.disconnect();
+    };
   }, [supabase]);
 
   return (
-    <div className="fixed inset-0 pointer-events-none z-[9999] overflow-hidden opacity-[0.08] flex flex-wrap justify-between items-center select-none" aria-hidden="true">
+    <div id="watermark-container" className="fixed inset-0 pointer-events-none z-[9999] overflow-hidden opacity-[0.08] flex flex-wrap justify-between items-center select-none" aria-hidden="true">
       {Array.from({ length: 48 }).map((_, i) => (
         <div 
           key={i} 
