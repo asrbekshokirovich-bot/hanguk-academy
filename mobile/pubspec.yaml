@@ -12,8 +12,6 @@ dependencies:
     sdk: flutter
   # Provides WebView capabilities to wrap the Vercel web app
   webview_flutter: ^4.4.2
-  # Provides secure window management (FLAG_SECURE wrapper)
-  flutter_windowmanager: ^0.2.0
   dio: ^5.4.0
   path_provider: ^2.1.2
   open_filex: ^4.3.4

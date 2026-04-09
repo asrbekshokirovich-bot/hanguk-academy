@@ -43,10 +43,6 @@ jobs:
           # 4. Compile the APK
           cd hanguk_app
           flutter pub get
-          
-          # 4.1 Apply Namespace Patch for legacy Flutter packages (AGP 8.x requirement)
-          find ~/.pub-cache/hosted/pub.dev/flutter_windowmanager-0.2.0/android/ -name "build.gradle" -exec sed -i -e '/android {/a\    namespace "io.adaptant.labs.flutter_windowmanager"' {} + || true
-          
           flutter build apk --release
           
           # 5. Extract the generated executable

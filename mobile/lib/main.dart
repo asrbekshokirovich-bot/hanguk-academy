@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
-import 'package:flutter_windowmanager/flutter_windowmanager.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:dio/dio.dart';
 import 'dart:io';
@@ -41,7 +40,6 @@ class _DRMWebContainerState extends State<DRMWebContainer> {
   @override
   void initState() {
     super.initState();
-    _secureScreen();
     _checkForUpdates();
     
     _controller = WebViewController()
@@ -83,14 +81,6 @@ class _DRMWebContainerState extends State<DRMWebContainer> {
     } catch (e) {
       debugPrint("Update check failed: $e, continuing cleanly if network is partitioned.");
     }
-  }
-
-  Future<void> _secureScreen() async {
-    // Dynamic fallback: Request FLAG_SECURE on Android explicitly.
-    if (Platform.isAndroid) {
-      await FlutterWindowManager.addFlags(FlutterWindowManager.FLAG_SECURE);
-    }
-    // iOS is handled via AppDelegate.swift natively.
   }
 
   @override
