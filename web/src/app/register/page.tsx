@@ -7,7 +7,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -16,7 +16,7 @@ export default function LoginPage() {
   const router = useRouter();
   const supabase = createClient();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
@@ -24,7 +24,7 @@ export default function LoginPage() {
     // Create the pseudo-email mapping
     const pseudoEmail = `${phone.trim()}@hanguk.auth`;
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { error } = await supabase.auth.signUp({
       email: pseudoEmail,
       password: password,
     });
@@ -39,8 +39,8 @@ export default function LoginPage() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-6">
-      <Link href="/" className="absolute top-8 left-8 flex items-center gap-2 text-slate-400 hover:text-white transition-colors">
-        <ChevronLeft className="w-5 h-5" /> Back
+      <Link href="/login" className="absolute top-8 left-8 flex items-center gap-2 text-slate-400 hover:text-white transition-colors">
+        <ChevronLeft className="w-5 h-5" /> Back to Login
       </Link>
       
       <motion.div 
@@ -49,11 +49,11 @@ export default function LoginPage() {
         className="glass-card w-full max-w-md p-8 rounded-2xl flex flex-col gap-6"
       >
         <div className="text-center">
-          <h2 className="text-3xl font-bold text-white mb-2">Welcome Back</h2>
-          <p className="text-slate-400 text-sm">Enter your phone number and password to access your cohort.</p>
+          <h2 className="text-3xl font-bold text-white mb-2">Join the Cohort</h2>
+          <p className="text-slate-400 text-sm">Create an account using your phone number.</p>
         </div>
 
-        <form className="flex flex-col gap-4 mt-4" onSubmit={handleLogin}>
+        <form className="flex flex-col gap-4 mt-4" onSubmit={handleRegister}>
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium text-slate-300">Phone Number</label>
             <input 
@@ -83,12 +83,12 @@ export default function LoginPage() {
             disabled={loading} 
             className="mt-4 px-6 py-3 bg-brand-500 text-surface-900 font-bold rounded-xl hover:bg-brand-400 transition-colors disabled:opacity-50 shadow-[0_0_20px_rgba(45,212,191,0.2)]"
           >
-            {loading ? "Signing in..." : "Sign In"}
+            {loading ? "Registering..." : "Create Account"}
           </button>
         </form>
 
         <p className="text-center text-sm text-slate-400 mt-4">
-          Don&apos;t have an account? <Link href="/register" className="text-brand-400 hover:text-brand-300 underline">Enroll Now</Link>
+          Already have an account? <Link href="/login" className="text-brand-400 hover:text-brand-300 underline">Log In</Link>
         </p>
       </motion.div>
     </div>
