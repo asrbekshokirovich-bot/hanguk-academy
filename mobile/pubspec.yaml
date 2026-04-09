@@ -1,0 +1,24 @@
+name: hanguk_app
+description: Hanguk Academy DRM Cross-Platform App
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # Provides WebView capabilities to wrap the Vercel web app
+  webview_flutter: ^4.4.2
+  # Provides secure window management (FLAG_SECURE wrapper)
+  flutter_windowmanager: ^0.2.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+
+flutter:
+  uses-material-design: true
