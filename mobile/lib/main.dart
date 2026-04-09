@@ -45,7 +45,7 @@ class _DRMWebContainerState extends State<DRMWebContainer> {
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(const Color(0xFF0f172a))
-      ..loadRequest(Uri.parse('https://hanguk-academy.vercel.app'));
+      ..loadRequest(Uri.parse('https://hanguk-academy.vercel.app/login'));
   }
 
   Future<void> _checkForUpdates() async {

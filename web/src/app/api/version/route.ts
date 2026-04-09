@@ -18,7 +18,7 @@ export async function GET() {
 
   // Simulates a database query for the latest production configuration.
   return NextResponse.json({
-    latest_version: "1.0.1",
+    latest_version: "1.0.2",
     download_url: "https://github.com/asrbekshokirovich-bot/hanguk-academy/releases/latest/download/hanguk_academy.apk",
     sha256_checksum: dynamicHash,
   });

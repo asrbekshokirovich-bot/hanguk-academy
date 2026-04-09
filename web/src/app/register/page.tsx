@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
@@ -15,6 +15,14 @@ export default function RegisterPage() {
   
   const router = useRouter();
   const supabase = createClient();
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        router.push("/dashboard");
+      }
+    });
+  }, [router, supabase.auth]);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,7 +38,8 @@ export default function RegisterPage() {
     });
 
     if (error) {
-      setError(error.message);
+      // Forcefully strip 'email' from Supabase heuristic error responses to preserve phone-first locale.
+      setError(error.message.replace(/email/gi, "phone number").replace(/Email/g, "Phone number"));
       setLoading(false);
     } else {
       router.push("/dashboard");
