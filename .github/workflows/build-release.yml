@@ -1,0 +1,59 @@
+name: Build and Release Flutter APK
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+          
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+      
+      - name: Scaffold Flutter and Apply Patches
+        run: |
+          # 1. Create a raw flutter scaffold
+          flutter create --org com.hanguk.academy hanguk_app
+          
+          # 2. Inject our securely architected code directly over the scaffold
+          cp -r mobile/lib/* hanguk_app/lib/ || true
+          cp mobile/pubspec.yaml hanguk_app/pubspec.yaml || true
+          
+          # 3. Inject Android Specific Native Components
+          mkdir -p hanguk_app/android/app/src/main/kotlin/com/hanguk/academy
+          cp mobile/android/app/src/main/kotlin/com/hanguk/academy/MainActivity.kt hanguk_app/android/app/src/main/kotlin/com/hanguk/academy/MainActivity.kt || true
+          cp mobile/android/app/src/main/AndroidManifest.xml hanguk_app/android/app/src/main/AndroidManifest.xml || true
+          mkdir -p hanguk_app/android/app/src/main/res/xml
+          cp mobile/android/app/src/main/res/xml/filepaths.xml hanguk_app/android/app/src/main/res/xml/filepaths.xml || true
+          
+          # 4. Compile the APK
+          cd hanguk_app
+          flutter pub get
+          flutter build apk --release
+          
+          # 5. Extract the generated executable
+          cp build/app/outputs/flutter-apk/app-release.apk ../hanguk_academy.apk
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: "v1.0.${{ github.run_number }}"
+          name: "Hanguk Academy Build v1.0.${{ github.run_number }}"
+          files: hanguk_academy.apk
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
