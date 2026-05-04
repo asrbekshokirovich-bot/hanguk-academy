@@ -42,10 +42,16 @@ class _DRMWebContainerState extends State<DRMWebContainer> {
     super.initState();
     _checkForUpdates();
     
+    // The Flutter app now wraps the Hanguk Consulting / Interview Practice
+    // site (hanguk-uz) instead of the academy site, so students get the full
+    // training experience (Korean voice, AI auto-greet, recorded sessions,
+    // etc.) on mobile via the same WebView shell.
+    // Route is /auth — hanguk-uz uses react-router with `path="/auth"` for
+    // the login/signup screen (not /login).
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(const Color(0xFF0f172a))
-      ..loadRequest(Uri.parse('https://hanguk-academy.vercel.app/login'));
+      ..loadRequest(Uri.parse('https://hanguk-uz.vercel.app/auth'));
   }
 
   Future<void> _checkForUpdates() async {
@@ -57,9 +63,14 @@ class _DRMWebContainerState extends State<DRMWebContainer> {
       final currentVersion = packageInfo.version;
 
       // Make a GET request to the hosting manifest.
-      // (Placeholder endpoint linked to Vercel deployment structure).
+      // NOTE: hanguk-uz (Vite/React) does NOT currently expose `/api/version`,
+      // so this request will 404 and the catch-block below silently bypasses
+      // the update prompt. That's intentional for now — until a proper
+      // version endpoint ships for hanguk-uz, the in-app OTA update flow is
+      // a no-op (users can still update via Play Store / TestFlight). When
+      // we add `/api/version` to hanguk-uz, this URL keeps working unchanged.
       Dio dio = Dio();
-      final response = await dio.get('https://hanguk-academy.vercel.app/api/version');
+      final response = await dio.get('https://hanguk-uz.vercel.app/api/version');
       
       final remoteVersion = response.data['latest_version'] as String?;
       final downloadUrl = response.data['download_url'] as String?;

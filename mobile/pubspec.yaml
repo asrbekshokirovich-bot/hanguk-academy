@@ -2,7 +2,7 @@ name: hanguk_app
 description: Hanguk Academy DRM Cross-Platform App
 publish_to: 'none'
 
-version: 1.0.2+1
+version: 1.0.3+2
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
