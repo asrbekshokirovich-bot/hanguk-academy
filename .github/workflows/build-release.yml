@@ -1,65 +1,185 @@
 name: Build and Release Flutter APK
 
+# Trigger model:
+#  - push to main           → CI verification build (no release)
+#  - push of a v*.*.* tag   → publish a GitHub Release with APK + version.json
+#  - manual workflow_dispatch → publish a release using pubspec's version
 on:
   push:
     branches:
       - main
+    tags:
+      - 'v*.*.*'
   workflow_dispatch:
 
 permissions:
   contents: write
 
+# Avoid two releases racing if main + tag are pushed back-to-back.
+concurrency:
+  group: build-release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+      sha256: ${{ steps.checksum.outputs.sha256 }}
+      should_release: ${{ steps.version.outputs.should_release }}
+
     steps:
       - uses: actions/checkout@v4
-      
+        with:
+          fetch-depth: 0  # need history to read previous tag for release notes
+
       - uses: actions/setup-java@v3
         with:
           distribution: 'zulu'
           java-version: '17'
-          
+
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-      
+
+      # ────────────────────────────────────────────────────────────────────
+      # Version + release-decision step
+      # ────────────────────────────────────────────────────────────────────
+      - name: Resolve version & release decision
+        id: version
+        run: |
+          set -euo pipefail
+          # Parse `version: X.Y.Z+B` from pubspec.yaml; drop +B for the tag.
+          PUBSPEC_VERSION=$(grep -E '^version:' mobile/pubspec.yaml | awk '{print $2}' | cut -d'+' -f1)
+          echo "pubspec version: $PUBSPEC_VERSION"
+
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            TAG="${GITHUB_REF#refs/tags/}"
+            VERSION="${TAG#v}"
+            SHOULD_RELEASE=true
+          elif [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            VERSION="$PUBSPEC_VERSION"
+            TAG="v$VERSION"
+            SHOULD_RELEASE=true
+          else
+            # main-branch push: build only, do not publish a release.
+            VERSION="$PUBSPEC_VERSION"
+            TAG="v$VERSION"
+            SHOULD_RELEASE=false
+          fi
+
+          echo "version=$VERSION"   >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG"           >> "$GITHUB_OUTPUT"
+          echo "should_release=$SHOULD_RELEASE" >> "$GITHUB_OUTPUT"
+
       - name: Scaffold Flutter and Apply Patches
         run: |
-          # 1. Create a raw flutter scaffold
+          set -euo pipefail
           flutter create --org com.hanguk.academy hanguk_app
-          
-          # 2. Inject our securely architected code directly over the scaffold
+
           cp -r mobile/lib/* hanguk_app/lib/ || true
           cp mobile/pubspec.yaml hanguk_app/pubspec.yaml || true
-          
-          # 3. Inject Android Specific Native Components
+
           mkdir -p hanguk_app/android/app/src/main/kotlin/com/hanguk/academy
-          cp mobile/android/app/src/main/kotlin/com/hanguk/academy/MainActivity.kt hanguk_app/android/app/src/main/kotlin/com/hanguk/academy/MainActivity.kt || true
-          cp mobile/android/app/src/main/AndroidManifest.xml hanguk_app/android/app/src/main/AndroidManifest.xml || true
+          cp mobile/android/app/src/main/kotlin/com/hanguk/academy/MainActivity.kt \
+             hanguk_app/android/app/src/main/kotlin/com/hanguk/academy/MainActivity.kt || true
+          cp mobile/android/app/src/main/AndroidManifest.xml \
+             hanguk_app/android/app/src/main/AndroidManifest.xml || true
           mkdir -p hanguk_app/android/app/src/main/res/xml
-          cp mobile/android/app/src/main/res/xml/filepaths.xml hanguk_app/android/app/src/main/res/xml/filepaths.xml || true
-          
-          # 4. Compile the APK
+          cp mobile/android/app/src/main/res/xml/filepaths.xml \
+             hanguk_app/android/app/src/main/res/xml/filepaths.xml || true
+
           cd hanguk_app
           flutter pub get
           flutter build apk --release
-          
-          # 5. Extract the generated executable
-          cp build/app/outputs/flutter-apk/app-release.apk ../hanguk_academy.apk
-          cd ..
-          
-          # 6. Generate cryptographic SHA-256 signatures for OTA Verify
-          sha256sum hanguk_academy.apk | awk '{print $1}' > hanguk_academy.apk.sha256
 
-      - name: Create Release
+          cp build/app/outputs/flutter-apk/app-release.apk ../hanguk_academy.apk
+
+      # ────────────────────────────────────────────────────────────────────
+      # Hash the artifact
+      # ────────────────────────────────────────────────────────────────────
+      - name: Compute SHA-256
+        id: checksum
+        run: |
+          set -euo pipefail
+          SHA=$(sha256sum hanguk_academy.apk | awk '{print $1}')
+          echo "$SHA" > hanguk_academy.apk.sha256
+          echo "sha256=$SHA" >> "$GITHUB_OUTPUT"
+          echo "Computed SHA-256: $SHA"
+
+      # ────────────────────────────────────────────────────────────────────
+      # version.json — the manifest the Flutter app polls on launch
+      # ────────────────────────────────────────────────────────────────────
+      - name: Generate version.json
+        if: steps.version.outputs.should_release == 'true'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          TAG: ${{ steps.version.outputs.tag }}
+          SHA: ${{ steps.checksum.outputs.sha256 }}
+        run: |
+          set -euo pipefail
+          # release_metadata.json is an OPTIONAL file the maintainer commits to
+          # control min_required_version / rollout_percent / release_notes.
+          # If absent, we default to "no floor", 100% rollout, and use the
+          # latest commit subject as the notes.
+          MIN_REQUIRED="0.0.0"
+          ROLLOUT="100"
+          NOTES="$(git log -1 --pretty=%s)"
+          META_FILE="mobile/release_metadata.json"
+          if [[ -f "$META_FILE" ]]; then
+            MIN_REQUIRED=$(jq -r '.min_required_version // "0.0.0"' "$META_FILE")
+            ROLLOUT=$(jq -r '.rollout_percent // 100' "$META_FILE")
+            META_NOTES=$(jq -r '.release_notes // ""' "$META_FILE")
+            if [[ -n "$META_NOTES" && "$META_NOTES" != "null" ]]; then
+              NOTES="$META_NOTES"
+            fi
+          fi
+
+          DOWNLOAD_URL="https://github.com/${{ github.repository }}/releases/download/${TAG}/hanguk_academy.apk"
+
+          jq -n \
+            --arg latest "$VERSION" \
+            --arg minreq "$MIN_REQUIRED" \
+            --arg url "$DOWNLOAD_URL" \
+            --arg sha "$SHA" \
+            --arg notes "$NOTES" \
+            --argjson rollout "$ROLLOUT" \
+            '{
+              latest_version: $latest,
+              min_required_version: $minreq,
+              download_url: $url,
+              sha256_checksum: $sha,
+              release_notes: $notes,
+              rollout_percent: $rollout
+            }' > version.json
+
+          echo "Generated version.json:"
+          cat version.json
+
+      - name: Create GitHub Release
+        if: steps.version.outputs.should_release == 'true'
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: "v1.0.${{ github.run_number }}"
-          name: "Hanguk Academy Build v1.0.${{ github.run_number }}"
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: "Hanguk Build ${{ steps.version.outputs.tag }}"
+          body_path: version.json
           files: |
             hanguk_academy.apk
             hanguk_academy.apk.sha256
+            version.json
           make_latest: true
+          generate_release_notes: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload artifacts (always, for debugging)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hanguk-build-${{ steps.version.outputs.tag }}
+          path: |
+            hanguk_academy.apk
+            hanguk_academy.apk.sha256
+            version.json
+          if-no-files-found: warn

@@ -1,0 +1,6 @@
+{
+  "_comment": "Optional override file read by .github/workflows/build-release.yml when generating version.json. Defaults: min_required_version='0.0.0' (no floor), rollout_percent=100 (full rollout), release_notes=last commit subject. Edit and commit before tagging a release. To halt distribution of a buggy build, set rollout_percent to 0 and re-run the workflow_dispatch — the latest version.json will then tell every client to skip.",
+  "min_required_version": "0.0.0",
+  "rollout_percent": 100,
+  "release_notes": "Bug fixes and improvements."
+}

@@ -1,13 +1,21 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET"/>
-    
-    <!-- Required for downloading files -->
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
-    
-    <!-- The most critical permission required for invoking the Android system package installer -->
+
+    <!--
+      The most critical permission for invoking the Android system package
+      installer. On Android 8+ this still requires runtime user consent via
+      Settings → Special access → Install unknown apps; the runtime check
+      lives in updater_dialog.dart::_ensureInstallPermission.
+    -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
+    <!--
+      We do NOT request READ_EXTERNAL_STORAGE / WRITE_EXTERNAL_STORAGE.
+      Scoped storage on Android 10+ makes those a no-op for app-private
+      files, and we only ever write to getExternalStorageDirectory() which
+      the app owns by default.
+    -->
 
     <application
         android:label="Hanguk Academy"
@@ -33,11 +41,19 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
-            
-        <!-- FileProvider config mapping our secure XML path registry securely to external requests -->
+
+        <!--
+          FileProvider authority MUST match the app's applicationId so the
+          system package installer can resolve the URI permission grant.
+          The CI scaffolds the project with `flutter create --org
+          com.hanguk.academy hanguk_app`, which sets applicationId to
+          `com.hanguk.academy.hanguk_app`. The previous authority
+          (com.hanguk.academy.fileprovider) did NOT match and would fail
+          on modern Android — fixed below.
+        -->
         <provider
             android:name="androidx.core.content.FileProvider"
-            android:authorities="com.hanguk.academy.fileprovider"
+            android:authorities="com.hanguk.academy.hanguk_app.fileprovider"
             android:exported="false"
             android:grantUriPermissions="true">
             <meta-data
@@ -46,4 +62,16 @@
         </provider>
 
     </application>
+
+    <!--
+      Android 11+ package visibility: we need to query for packages that can
+      handle VIEW intents on application/vnd.android.package-archive (the
+      system package installer) so OpenFilex can resolve a target.
+    -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:mimeType="application/vnd.android.package-archive" />
+        </intent>
+    </queries>
 </manifest>

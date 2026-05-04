@@ -1,5 +1,5 @@
 name: hanguk_app
-description: Hanguk Academy DRM Cross-Platform App
+description: Hanguk Consulting mobile shell — wraps the web Interview Practice / Trainer experience and handles in-app OTA updates.
 publish_to: 'none'
 
 version: 1.0.3+2
@@ -17,6 +17,10 @@ dependencies:
   open_filex: ^4.3.4
   package_info_plus: ^5.0.1
   crypto: ^3.0.3
+  # OTA updater dependencies
+  pub_semver: ^2.1.4          # proper semver compare (latest > current, etc.)
+  permission_handler: ^11.3.0 # runtime "Install unknown apps" permission
+  url_launcher: ^6.2.5        # iOS App Store deep link
 
 dev_dependencies:
   flutter_test:
