@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET"/>
@@ -5,7 +6,7 @@
     <!--
       The most critical permission for invoking the Android system package
       installer. On Android 8+ this still requires runtime user consent via
-      Settings → Special access → Install unknown apps; the runtime check
+      Settings -> Special access -> Install unknown apps; the runtime check
       lives in updater_dialog.dart::_ensureInstallPermission.
     -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
@@ -49,7 +50,7 @@
           com.hanguk.academy hanguk_app`, which sets applicationId to
           `com.hanguk.academy.hanguk_app`. The previous authority
           (com.hanguk.academy.fileprovider) did NOT match and would fail
-          on modern Android — fixed below.
+          on modern Android. Authority below now matches applicationId.
         -->
         <provider
             android:name="androidx.core.content.FileProvider"

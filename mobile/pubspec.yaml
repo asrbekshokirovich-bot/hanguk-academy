@@ -2,7 +2,7 @@ name: hanguk_app
 description: Hanguk Consulting mobile shell — wraps the web Interview Practice / Trainer experience and handles in-app OTA updates.
 publish_to: 'none'
 
-version: 1.0.12+12
+version: 1.0.13+13
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
